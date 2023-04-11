@@ -77,7 +77,7 @@ type
     ## Representation of public key.
     data: secp256k1_pubkey
 
-  SkXOnlyPublicKey* {.requiresInit.} = object
+  SkXOnlyPublicKey* = object
     ## Representation of public key that only reveals the x-coordinate.
     data: secp256k1_xonly_pubkey
 
@@ -98,11 +98,11 @@ type
     ## Representation of recoverable signature.
     data: secp256k1_ecdsa_recoverable_signature
 
-  SkSchnorrSignature* {.requiresInit.} = object
+  SkSchnorrSignature* = object
     ## Representation of a Schnorr signature.
     data: array[SkRawSchnorrSignatureSize, byte]
 
-  SkContext = object
+  SkContext* = object
     ## Representation of Secp256k1 context object.
     context: ptr secp256k1_context
 
@@ -343,6 +343,7 @@ func fromHex*(T: type SkXOnlyPublicKey, data: string): SkResult[T] =
 
 func toRaw*(pubkey: SkXOnlyPublicKey): array[SkRawXOnlyPublicKeySize, byte] =
   ## Serialize Secp256k1 `x-only public key` ``key`` to raw form.
+  if pubkey == default(typeof pubkey): return
   let res = secp256k1_xonly_pubkey_serialize(
     secp256k1_context_no_precomp, result.baseAddr, unsafeAddr pubkey.data)
   doAssert res == 1, "Can't fail, per documentation"
@@ -580,10 +581,12 @@ func verify*(sig: SkSignature, msg: SkMessage, key: SkPublicKey): bool =
     getContext(), unsafeAddr sig.data, msg.baseAddr, unsafeAddr key.data) == 1
 
 func verify*(sig: SkSchnorrSignature, msg: SkMessage, pubkey: SkXOnlyPublicKey): bool =
+  if pubkey == default(typeof pubkey): return
   secp256k1_schnorrsig_verify(
     getContext(), unsafeAddr sig.data[0], msg.baseAddr, csize_t SkMessageSize, unsafeAddr pubkey.data) == 1
 
 func verify*(sig: SkSchnorrSignature, msg: openArray[byte], pubkey: SkXOnlyPublicKey): bool =
+  if pubkey == default(typeof pubkey): return
   secp256k1_schnorrsig_verify(
     getContext(), unsafeAddr sig.data[0], msg.baseAddr, csize_t msg.len, unsafeAddr pubkey.data) == 1
 
@@ -652,10 +655,8 @@ func fromBytes*(T: type SkMessage, data: openArray[byte]): SkResult[SkMessage] =
 # TODO replace `requiresInit` with a pragma that does the expected thing
 proc default*(T: type SkPublicKey): T {.error: "loophole".}
 proc default*(T: type SkSecretKey): T {.error: "loophole".}
-proc default*(T: type SkXOnlyPublicKey): T {.error: "loophole".}
 proc default*(T: type SkSignature): T {.error: "loophole".}
 proc default*(T: type SkRecoverableSignature): T {.error: "loophole".}
-proc default*(T: type SkSchnorrSignature): T {.error: "loophole".}
 proc default*(T: type SkEcdhSecret): T {.error: "loophole".}
 
 func tweakAdd*(secretKey: var SkSecretKey, tweak: openArray[byte]): SkResult[void] =

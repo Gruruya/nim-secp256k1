@@ -527,7 +527,8 @@ template signSchnorrImpl(signMsg: untyped): untyped =
 func signSchnorr*(key: SkSecretKey, msg: SkMessage, randbytes: Opt[array[32, byte]]): SkSchnorrSignature =
   ## Sign message `msg` using private key `key` with the Schnorr signature algorithm and return signature object.
   ## `randbytes` should be an array of 32 freshly generated random bytes.
-  let aux_rand32 = if randbytes.isSome: randbytes[].baseAddr else: nil
+  template aux_rand32: untyped =
+    if randbytes.isSome: randbytes[].baseAddr else: nil
   signSchnorrImpl(
     secp256k1_schnorrsig_sign32(
       getContext(), data.baseAddr, msg.baseAddr, addr kp, aux_rand32))
@@ -535,7 +536,8 @@ func signSchnorr*(key: SkSecretKey, msg: SkMessage, randbytes: Opt[array[32, byt
 func signSchnorr*(key: SkSecretKey, msg: openArray[byte], randbytes: Opt[array[32, byte]]): SkSchnorrSignature =
   ## Sign message `msg` using private key `key` with the Schnorr signature algorithm and return signature object.
   ## `randbytes` should be an array of 32 freshly generated random bytes.
-  let aux_rand32 = if randbytes.isSome: randbytes[].baseAddr else: nil
+  template aux_rand32: untyped =
+    if randbytes.isSome: randbytes[].baseAddr else: nil
   let extraparams = secp256k1_schnorrsig_extraparams(magic: SECP256K1_SCHNORRSIG_EXTRAPARAMS_MAGIC, noncefp: nil, ndata: aux_rand32)
   signSchnorrImpl(
     secp256k1_schnorrsig_sign_custom(
